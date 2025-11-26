@@ -2,6 +2,7 @@ from flask import Flask, request, redirect, url_for, render_template, send_from_
 
 import os
 import sqlite3
+import requests
 from datetime import datetime
 
 app = Flask(__name__)
@@ -11,7 +12,7 @@ app.secret_key = 'Jesusvalen07!'
 # Verificar que exista la carpeta de uploads
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
-
+    
 # Inicializar base de datos SQLite y crear tabla si no existe
 def init_db():
     conn = sqlite3.connect('database.db')

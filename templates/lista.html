@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Transferencias guardadas</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='estilos.css') }}">
+</head>
+<body>
+<div class="contenedor">
+    <a href="{{ url_for('logout') }}" class="cerrar-sesion">Cerrar sesión</a>
+    <h2>Lista de transferencias guardadas</h2>
+    <a href="{{ url_for('index') }}">Volver al formulario</a>
+    <table>
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Fecha</th>
+                <th>Monto</th>
+                <th>Descripción</th>
+                <th>Comprobante</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for tr in datos %}
+            <tr>
+                <td>{{ tr[1] }}</td>
+                <td>{{ tr[2] }}</td>
+                <td>{{ tr[3] }}</td>
+                <td>{{ tr[4] }}</td>
+                <td>
+                    <a href="{{ url_for('uploaded_file', filename=tr[5]) }}" target="_blank">
+                        <img src="{{ url_for('uploaded_file', filename=tr[5]) }}" width="100"/>
+                    </a>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+</body>
+</html>
+

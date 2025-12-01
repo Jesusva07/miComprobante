@@ -1,0 +1,29 @@
+# Credenciales y tokens
+credentials.json
+token.pickle
+
+# Variables de entorno
+.env
+
+# Archivos de Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Base de datos local (opcional, si no quieres versionarla)
+# database.db

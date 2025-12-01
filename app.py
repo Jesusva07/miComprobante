@@ -1,19 +1,28 @@
 from flask import Flask, request, redirect, url_for, render_template, send_from_directory, session, flash
-
 import os
 import sqlite3
 import requests
 from datetime import datetime
 from google_drive import subir_a_drive
+from dotenv import load_dotenv
+
+# Cargar variables de entorno
+load_dotenv()
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = 'uploads'  # Carpeta donde se guardan las imágenes
-app.secret_key = 'Jesusvalen07!'
+app.config['UPLOAD_FOLDER'] = 'uploads'
+
+# Usar variables de entorno (con valores por defecto para desarrollo)
+app.secret_key = os.getenv('SECRET_KEY', 'default-secret-key-change-in-production')
+
+# Credenciales de login
+USUARIO = os.getenv('USUARIO_APP', 'admin')
+PASSWORD = os.getenv('PASSWORD_APP', 'password')
 
 # Verificar que exista la carpeta de uploads
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
-    
+
 # Inicializar base de datos SQLite y crear tabla si no existe
 def init_db():
     conn = sqlite3.connect('database.db')
@@ -32,9 +41,6 @@ def init_db():
     conn.close()
 
 init_db()
-
-USUARIO = 'admin'
-PASSWORD = 'Jesusvalen07!'
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -59,7 +65,7 @@ def logout():
 def index():
     if not session.get('logueado'):
         return redirect(url_for('login'))
-        
+    
     if request.method == 'POST':
         nombre = request.form['nombre']
         fecha = request.form['fecha']
@@ -87,7 +93,7 @@ def index():
 
     return render_template('index.html')
 
-# Página de listado/consulta (puedes filtrar después)
+# Página de listado/consulta
 @app.route('/transferencias')
 def ver_transferencias():
     if not session.get('logueado'):
@@ -99,7 +105,7 @@ def ver_transferencias():
     conn.close()
     return render_template('lista.html', datos=datos)
 
-# Servir imágenes guardadas
+# Servir imágenes guardadas (si aún hay almacenadas localmente)
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     if not session.get('logueado'):
@@ -108,4 +114,4 @@ def uploaded_file(filename):
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=port, debug=False)

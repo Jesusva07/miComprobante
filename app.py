@@ -1,4 +1,5 @@
 from flask import Flask, request, redirect, url_for, render_template, session, flash
+from flask_sqlalchemy import SQLAlchemy
 import os
 import json
 from datetime import datetime
@@ -11,6 +12,21 @@ import redis
 load_dotenv()
 
 app = Flask(__name__)
+
+# Configurar SQLAlchemy con PostgreSQL
+database_url = os.getenv('DATABASE_URL')
+if database_url:
+    # Para compatibilidad con Vercel
+    if database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+else:
+    # Fallback para desarrollo local
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db = SQLAlchemy(app)
 
 # Usar variables de entorno
 app.secret_key = os.getenv('SECRET_KEY', 'default-secret-key-change-in-production')
@@ -156,7 +172,6 @@ def login():
             return redirect(url_for('index'))
         else:
             flash('Usuario o contraseña incorrectos')
-            return render_template('login.html')
     return render_template('login.html')
 
 @app.route('/logout')
@@ -176,7 +191,7 @@ def index():
         monto = request.form.get('monto', '')
         descripcion = request.form.get('descripcion', '')
         imagen = request.files['imagen']
-
+        
         if imagen:
             try:
                 # Subir a Cloudinary
@@ -197,9 +212,10 @@ def index():
                     return redirect(url_for('index'))
                 
             except Exception as e:
+                db.session.rollback()
                 flash(f'Error al subir la imagen: {str(e)}')
                 return redirect(url_for('index'))
-
+    
     return render_template('index.html')
 
 # Página de listado/consulta

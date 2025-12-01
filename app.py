@@ -1,30 +1,17 @@
 from flask import Flask, request, redirect, url_for, render_template, session, flash
 import os
-import json
 from datetime import datetime
 from dotenv import load_dotenv
 import cloudinary
 import cloudinary.uploader
-import redis
+from sqlalchemy import create_engine, Column, Integer, String, DateTime
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
 
 # Cargar variables de entorno
 load_dotenv()
 
 app = Flask(__name__)
-
-# Configurar SQLAlchemy con PostgreSQL
-database_url = os.getenv('DATABASE_URL')
-if database_url:
-    # Para compatibilidad con Vercel
-    if database_url.startswith('postgres://'):
-        database_url = database_url.replace('postgres://', 'postgresql://', 1)
-    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-else:
-    # Fallback para desarrollo local
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
-
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
 
 # Usar variables de entorno
 app.secret_key = os.getenv('SECRET_KEY', 'default-secret-key-change-in-production')
@@ -38,127 +25,39 @@ cloudinary.config(
     api_secret=os.getenv('CLOUDINARY_API_SECRET')
 )
 
-# Configurar Redis (Vercel KV)
-# En desarrollo usa SQLite, en producción usa Redis
-if os.getenv('KV_URL'):
-    # Producción: conectar a Vercel KV (Redis)
-    try:
-        redis_client = redis.from_url(os.getenv('KV_URL'), decode_responses=True)
-        redis_client.ping()
-        print("Conectado a Vercel KV (Redis)")
-        USE_REDIS = True
-    except Exception as e:
-        print(f"No se pudo conectar a Redis: {e}")
-        print("Usando SQLite en su lugar...")
-        USE_REDIS = False
-        import sqlite3
+# Configurar PostgreSQL (Railway)
+DATABASE_URL = os.getenv('DATABASE_URL')
+
+if not DATABASE_URL:
+    # Desarrollo local: usar SQLite
+    DATABASE_URL = 'sqlite:///./database.db'
+    print("⚠️ Usando SQLite local (desarrollo)")
 else:
-    # Desarrollo: usar SQLite
-    print("Usando SQLite para desarrollo local")
-    USE_REDIS = False
-    import sqlite3
+    # En Vercel: usar PostgreSQL de Railway
+    # Vercel necesita postgresql en lugar de postgres
+    if DATABASE_URL.startswith('postgres://'):
+        DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+    print("✅ Usando PostgreSQL en Railway (producción)")
 
-# Funciones para manejar tanto SQLite como Redis
-def init_db():
-    """Inicializar base de datos (solo para SQLite local)"""
-    if not USE_REDIS:
-        conn = sqlite3.connect('database.db')
-        cursor = conn.cursor()
-        cursor.execute('''
-        CREATE TABLE IF NOT EXISTS transferencias (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nombre TEXT NOT NULL,
-            fecha TEXT NOT NULL,
-            monto TEXT,
-            descripcion TEXT,
-            imagen TEXT NOT NULL,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
-        )
-        ''')
-        conn.commit()
-        conn.close()
+# Crear engine de SQLAlchemy
+engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+Session = sessionmaker(bind=engine)
+Base = declarative_base()
 
-def guardar_transferencia(nombre, fecha, monto, descripcion, imagen):
-    """Guardar transferencia en Redis o SQLite"""
-    if USE_REDIS:
-        # Usar Redis
-        try:
-            transferencia = {
-                'nombre': nombre,
-                'fecha': fecha,
-                'monto': monto,
-                'descripcion': descripcion,
-                'imagen': imagen,
-                'created_at': datetime.now().isoformat()
-            }
-            
-            # Incrementar contador para ID único
-            transfer_id = redis_client.incr('transfer_count')
-            redis_client.hset(f'transfer:{transfer_id}', mapping=transferencia)
-            
-            # Agregar ID a lista de todas las transferencias para búsqueda rápida
-            redis_client.lpush('transfers_list', transfer_id)
-            
-            return True
-        except Exception as e:
-            print(f"Error guardando en Redis: {e}")
-            return False
-    else:
-        # Usar SQLite
-        try:
-            conn = sqlite3.connect('database.db')
-            cursor = conn.cursor()
-            cursor.execute('INSERT INTO transferencias (nombre, fecha, monto, descripcion, imagen) VALUES (?, ?, ?, ?, ?)', 
-                          (nombre, fecha, monto, descripcion, imagen))
-            conn.commit()
-            conn.close()
-            return True
-        except Exception as e:
-            print(f"Error guardando en SQLite: {e}")
-            return False
+# Modelo de la tabla Transferencias
+class Transferencia(Base):
+    __tablename__ = 'transferencias'
+    
+    id = Column(Integer, primary_key=True)
+    nombre = Column(String(255), nullable=False)
+    fecha = Column(String(50), nullable=False)
+    monto = Column(String(100))
+    descripcion = Column(String(500))
+    imagen = Column(String(500), nullable=False)
+    created_at = Column(DateTime, default=datetime.now)
 
-def obtener_transferencias():
-    """Obtener todas las transferencias (ordenadas por fecha descendente)"""
-    if USE_REDIS:
-        # Usar Redis
-        try:
-            transfer_ids = redis_client.lrange('transfers_list', 0, -1)
-            transferencias = []
-            
-            for transfer_id in transfer_ids:
-                data = redis_client.hgetall(f'transfer:{transfer_id}')
-                if data:
-                    # Formato: (id, nombre, fecha, monto, descripcion, imagen)
-                    transferencias.append((
-                        transfer_id,
-                        data.get('nombre', ''),
-                        data.get('fecha', ''),
-                        data.get('monto', ''),
-                        data.get('descripcion', ''),
-                        data.get('imagen', '')
-                    ))
-            
-            # Ordenar por fecha descendente
-            transferencias.sort(key=lambda x: x[2], reverse=True)
-            return transferencias
-        except Exception as e:
-            print(f"Error obteniendo de Redis: {e}")
-            return []
-    else:
-        # Usar SQLite
-        try:
-            conn = sqlite3.connect('database.db')
-            cursor = conn.cursor()
-            cursor.execute('SELECT * FROM transferencias ORDER BY fecha DESC')
-            datos = cursor.fetchall()
-            conn.close()
-            return datos
-        except Exception as e:
-            print(f"Error obteniendo de SQLite: {e}")
-            return []
-
-# Inicializar BD
-init_db()
+# Crear tablas
+Base.metadata.create_all(engine)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -170,6 +69,7 @@ def login():
             return redirect(url_for('index'))
         else:
             flash('Usuario o contraseña incorrectos')
+            return render_template('login.html')
     return render_template('login.html')
 
 @app.route('/logout')
@@ -189,7 +89,7 @@ def index():
         monto = request.form.get('monto', '')
         descripcion = request.form.get('descripcion', '')
         imagen = request.files['imagen']
-        
+
         if imagen:
             try:
                 # Subir a Cloudinary
@@ -201,19 +101,31 @@ def index():
                 
                 url_imagen = resultado['secure_url']
                 
-                # Guardar en BD (Redis o SQLite)
-                if guardar_transferencia(nombre, fecha, monto, descripcion, url_imagen):
+                # Guardar en PostgreSQL
+                db_session = Session()
+                try:
+                    nueva_transferencia = Transferencia(
+                        nombre=nombre,
+                        fecha=fecha,
+                        monto=monto,
+                        descripcion=descripcion,
+                        imagen=url_imagen
+                    )
+                    db_session.add(nueva_transferencia)
+                    db_session.commit()
                     flash('Comprobante subido exitosamente')
                     return redirect(url_for('index'))
-                else:
-                    flash('Error al guardar en la base de datos')
+                except Exception as e:
+                    db_session.rollback()
+                    flash(f'Error al guardar: {str(e)}')
                     return redirect(url_for('index'))
+                finally:
+                    db_session.close()
                 
             except Exception as e:
-                db.session.rollback()
                 flash(f'Error al subir la imagen: {str(e)}')
                 return redirect(url_for('index'))
-    
+
     return render_template('index.html')
 
 # Página de listado/consulta
@@ -222,8 +134,20 @@ def ver_transferencias():
     if not session.get('logueado'):
         return redirect(url_for('login'))
     
-    datos = obtener_transferencias()
-    return render_template('lista.html', datos=datos)
+    try:
+        db_session = Session()
+        transferencias = db_session.query(Transferencia).order_by(Transferencia.fecha.desc()).all()
+        
+        # Convertir a tuplas para mantener compatibilidad con template
+        datos = []
+        for t in transferencias:
+            datos.append((t.id, t.nombre, t.fecha, t.monto, t.descripcion, t.imagen))
+        
+        db_session.close()
+        return render_template('lista.html', datos=datos)
+    except Exception as e:
+        print(f"Error obteniendo transferencias: {e}")
+        return render_template('lista.html', datos=[])
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

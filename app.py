@@ -4,6 +4,7 @@ import os
 import sqlite3
 import requests
 from datetime import datetime
+from google_drive import subir_a_drive
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'  # Carpeta donde se guardan las imágenes
@@ -58,6 +59,7 @@ def logout():
 def index():
     if not session.get('logueado'):
         return redirect(url_for('login'))
+        
     if request.method == 'POST':
         nombre = request.form['nombre']
         fecha = request.form['fecha']
@@ -66,21 +68,23 @@ def index():
         imagen = request.files['imagen']
 
         if imagen:
-            # Guardar imagen en carpeta uploads
-            ruta = os.path.join(app.config['UPLOAD_FOLDER'], imagen.filename)
-            imagen.save(ruta)
+            # Subir a Google Drive
+            contenido = imagen.read()
+            url_imagen = subir_a_drive(imagen.filename, contenido, imagen.mimetype)
 
-            # Guardar datos en la base de datos
-            conn = sqlite3.connect('database.db')
-            cursor = conn.cursor()
-            cursor.execute('INSERT INTO transferencias (nombre, fecha, monto, descripcion, imagen) VALUES (?, ?, ?, ?, ?)', 
-                          (nombre, fecha, monto, descripcion, imagen.filename))
-            conn.commit()
-            conn.close()
+            if url_imagen:
+                # Guardar URL en la base de datos
+                conn = sqlite3.connect('database.db')
+                cursor = conn.cursor()
+                cursor.execute('INSERT INTO transferencias (nombre, fecha, monto, descripcion, imagen) VALUES (?, ?, ?, ?, ?)', 
+                              (nombre, fecha, monto, descripcion, url_imagen))
+                conn.commit()
+                conn.close()
+                
+                return redirect(url_for('index'))
+            else:
+                return "Error al subir imagen a Google Drive", 500
 
-            return redirect(url_for('index'))
-
-    # Mostrar formulario
     return render_template('index.html')
 
 # Página de listado/consulta (puedes filtrar después)

@@ -2,14 +2,23 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Transferencias guardadas</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='estilos.css') }}">
 </head>
 <body>
-<div class="contenedor">
+<div class="header">
+    <div class="logo-container">
+        <div class="logo">💰</div>
+        <span class="logo-text">MiComprobante</span>
+    </div>
     <a href="{{ url_for('logout') }}" class="cerrar-sesion">Cerrar sesión</a>
+</div>
+
+<div class="contenedor">
     <h2>Lista de transferencias guardadas</h2>
-    <a href="{{ url_for('index') }}">Volver al formulario</a>
+    <a href="{{ url_for('index') }}" class="btn-secondary">Volver al formulario</a>
+    
     <table>
         <thead>
             <tr>
@@ -28,8 +37,8 @@
                 <td>{{ tr[3] }}</td>
                 <td>{{ tr[4] }}</td>
                 <td>
-                    <a href="{{ url_for('uploaded_file', filename=tr[5]) }}" target="_blank">
-                        <img src="{{ url_for('uploaded_file', filename=tr[5]) }}" width="100"/>
+                    <a href="{{ tr[5] }}" target="_blank">
+                        <img src="{{ tr[5] }}" width="100" alt="Comprobante"/>
                     </a>
                 </td>
             </tr>
@@ -39,4 +48,3 @@
 </div>
 </body>
 </html>
-

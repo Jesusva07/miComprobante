@@ -1,5 +1,4 @@
 from flask import Flask, request, redirect, url_for, render_template, session, flash
-from flask_sqlalchemy import SQLAlchemy
 import os
 import json
 from datetime import datetime
@@ -26,7 +25,6 @@ else:
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-db = SQLAlchemy(app)
 
 # Usar variables de entorno
 app.secret_key = os.getenv('SECRET_KEY', 'default-secret-key-change-in-production')

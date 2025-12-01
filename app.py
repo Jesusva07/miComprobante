@@ -1,16 +1,16 @@
 from flask import Flask, request, redirect, url_for, render_template, session, flash
 import os
-import sqlite3
+import json
 from datetime import datetime
 from dotenv import load_dotenv
 import cloudinary
 import cloudinary.uploader
+import redis
 
 # Cargar variables de entorno
 load_dotenv()
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = 'uploads'
 
 # Usar variables de entorno
 app.secret_key = os.getenv('SECRET_KEY', 'default-secret-key-change-in-production')
@@ -24,27 +24,126 @@ cloudinary.config(
     api_secret=os.getenv('CLOUDINARY_API_SECRET')
 )
 
-# Verificar que exista la carpeta de uploads (para desarrollo local)
-if not os.path.exists(app.config['UPLOAD_FOLDER']):
-    os.makedirs(app.config['UPLOAD_FOLDER'])
+# Configurar Redis (Vercel KV)
+# En desarrollo usa SQLite, en producción usa Redis
+if os.getenv('KV_URL'):
+    # Producción: conectar a Vercel KV (Redis)
+    try:
+        redis_client = redis.from_url(os.getenv('KV_URL'), decode_responses=True)
+        redis_client.ping()
+        print("Conectado a Vercel KV (Redis)")
+        USE_REDIS = True
+    except Exception as e:
+        print(f"No se pudo conectar a Redis: {e}")
+        print("Usando SQLite en su lugar...")
+        USE_REDIS = False
+        import sqlite3
+else:
+    # Desarrollo: usar SQLite
+    print("Usando SQLite para desarrollo local")
+    USE_REDIS = False
+    import sqlite3
 
-# Inicializar base de datos SQLite
+# Funciones para manejar tanto SQLite como Redis
 def init_db():
-    conn = sqlite3.connect('database.db')
-    cursor = conn.cursor()
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS transferencias (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        nombre TEXT NOT NULL,
-        fecha TEXT NOT NULL,
-        monto TEXT,
-        descripcion TEXT,
-        imagen TEXT NOT NULL
-    )
-    ''')
-    conn.commit()
-    conn.close()
+    """Inicializar base de datos (solo para SQLite local)"""
+    if not USE_REDIS:
+        conn = sqlite3.connect('database.db')
+        cursor = conn.cursor()
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS transferencias (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT NOT NULL,
+            fecha TEXT NOT NULL,
+            monto TEXT,
+            descripcion TEXT,
+            imagen TEXT NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+        ''')
+        conn.commit()
+        conn.close()
 
+def guardar_transferencia(nombre, fecha, monto, descripcion, imagen):
+    """Guardar transferencia en Redis o SQLite"""
+    if USE_REDIS:
+        # Usar Redis
+        try:
+            transferencia = {
+                'nombre': nombre,
+                'fecha': fecha,
+                'monto': monto,
+                'descripcion': descripcion,
+                'imagen': imagen,
+                'created_at': datetime.now().isoformat()
+            }
+            
+            # Incrementar contador para ID único
+            transfer_id = redis_client.incr('transfer_count')
+            redis_client.hset(f'transfer:{transfer_id}', mapping=transferencia)
+            
+            # Agregar ID a lista de todas las transferencias para búsqueda rápida
+            redis_client.lpush('transfers_list', transfer_id)
+            
+            return True
+        except Exception as e:
+            print(f"Error guardando en Redis: {e}")
+            return False
+    else:
+        # Usar SQLite
+        try:
+            conn = sqlite3.connect('database.db')
+            cursor = conn.cursor()
+            cursor.execute('INSERT INTO transferencias (nombre, fecha, monto, descripcion, imagen) VALUES (?, ?, ?, ?, ?)', 
+                          (nombre, fecha, monto, descripcion, imagen))
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            print(f"Error guardando en SQLite: {e}")
+            return False
+
+def obtener_transferencias():
+    """Obtener todas las transferencias (ordenadas por fecha descendente)"""
+    if USE_REDIS:
+        # Usar Redis
+        try:
+            transfer_ids = redis_client.lrange('transfers_list', 0, -1)
+            transferencias = []
+            
+            for transfer_id in transfer_ids:
+                data = redis_client.hgetall(f'transfer:{transfer_id}')
+                if data:
+                    # Formato: (id, nombre, fecha, monto, descripcion, imagen)
+                    transferencias.append((
+                        transfer_id,
+                        data.get('nombre', ''),
+                        data.get('fecha', ''),
+                        data.get('monto', ''),
+                        data.get('descripcion', ''),
+                        data.get('imagen', '')
+                    ))
+            
+            # Ordenar por fecha descendente
+            transferencias.sort(key=lambda x: x[2], reverse=True)
+            return transferencias
+        except Exception as e:
+            print(f"Error obteniendo de Redis: {e}")
+            return []
+    else:
+        # Usar SQLite
+        try:
+            conn = sqlite3.connect('database.db')
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM transferencias ORDER BY fecha DESC')
+            datos = cursor.fetchall()
+            conn.close()
+            return datos
+        except Exception as e:
+            print(f"Error obteniendo de SQLite: {e}")
+            return []
+
+# Inicializar BD
 init_db()
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -83,23 +182,19 @@ def index():
                 # Subir a Cloudinary
                 resultado = cloudinary.uploader.upload(
                     imagen,
-                    folder='comprobantes',  # Carpeta en Cloudinary
+                    folder='comprobantes',
                     resource_type='auto'
                 )
                 
-                # Obtener URL de la imagen
                 url_imagen = resultado['secure_url']
                 
-                # Guardar en la base de datos
-                conn = sqlite3.connect('database.db')
-                cursor = conn.cursor()
-                cursor.execute('INSERT INTO transferencias (nombre, fecha, monto, descripcion, imagen) VALUES (?, ?, ?, ?, ?)', 
-                              (nombre, fecha, monto, descripcion, url_imagen))
-                conn.commit()
-                conn.close()
-                
-                flash('Comprobante subido exitosamente')
-                return redirect(url_for('index'))
+                # Guardar en BD (Redis o SQLite)
+                if guardar_transferencia(nombre, fecha, monto, descripcion, url_imagen):
+                    flash('Comprobante subido exitosamente')
+                    return redirect(url_for('index'))
+                else:
+                    flash('Error al guardar en la base de datos')
+                    return redirect(url_for('index'))
                 
             except Exception as e:
                 flash(f'Error al subir la imagen: {str(e)}')
@@ -112,13 +207,9 @@ def index():
 def ver_transferencias():
     if not session.get('logueado'):
         return redirect(url_for('login'))
-    conn = sqlite3.connect('database.db')
-    cursor = conn.cursor()
-    cursor.execute('SELECT * FROM transferencias ORDER BY fecha DESC')
-    datos = cursor.fetchall()
-    conn.close()
+    
+    datos = obtener_transferencias()
     return render_template('lista.html', datos=datos)
-
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

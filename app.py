@@ -1,10 +1,10 @@
-from flask import Flask, request, redirect, url_for, render_template, send_from_directory, session, flash
+from flask import Flask, request, redirect, url_for, render_template, session, flash
 import os
 import sqlite3
-import requests
 from datetime import datetime
-from google_drive import subir_a_drive
 from dotenv import load_dotenv
+import cloudinary
+import cloudinary.uploader
 
 # Cargar variables de entorno
 load_dotenv()
@@ -12,18 +12,23 @@ load_dotenv()
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
 
-# Usar variables de entorno (con valores por defecto para desarrollo)
+# Usar variables de entorno
 app.secret_key = os.getenv('SECRET_KEY', 'default-secret-key-change-in-production')
-
-# Credenciales de login
 USUARIO = os.getenv('USUARIO_APP', 'admin')
 PASSWORD = os.getenv('PASSWORD_APP', 'password')
 
-# Verificar que exista la carpeta de uploads
+# Configurar Cloudinary
+cloudinary.config(
+    cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
+    api_key=os.getenv('CLOUDINARY_API_KEY'),
+    api_secret=os.getenv('CLOUDINARY_API_SECRET')
+)
+
+# Verificar que exista la carpeta de uploads (para desarrollo local)
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
 
-# Inicializar base de datos SQLite y crear tabla si no existe
+# Inicializar base de datos SQLite
 def init_db():
     conn = sqlite3.connect('database.db')
     cursor = conn.cursor()
@@ -74,12 +79,18 @@ def index():
         imagen = request.files['imagen']
 
         if imagen:
-            # Subir a Google Drive
-            contenido = imagen.read()
-            url_imagen = subir_a_drive(imagen.filename, contenido, imagen.mimetype)
-
-            if url_imagen:
-                # Guardar URL en la base de datos
+            try:
+                # Subir a Cloudinary
+                resultado = cloudinary.uploader.upload(
+                    imagen,
+                    folder='comprobantes',  # Carpeta en Cloudinary
+                    resource_type='auto'
+                )
+                
+                # Obtener URL de la imagen
+                url_imagen = resultado['secure_url']
+                
+                # Guardar en la base de datos
                 conn = sqlite3.connect('database.db')
                 cursor = conn.cursor()
                 cursor.execute('INSERT INTO transferencias (nombre, fecha, monto, descripcion, imagen) VALUES (?, ?, ?, ?, ?)', 
@@ -87,9 +98,12 @@ def index():
                 conn.commit()
                 conn.close()
                 
+                flash('Comprobante subido exitosamente')
                 return redirect(url_for('index'))
-            else:
-                return "Error al subir imagen a Google Drive", 500
+                
+            except Exception as e:
+                flash(f'Error al subir la imagen: {str(e)}')
+                return redirect(url_for('index'))
 
     return render_template('index.html')
 
@@ -100,17 +114,10 @@ def ver_transferencias():
         return redirect(url_for('login'))
     conn = sqlite3.connect('database.db')
     cursor = conn.cursor()
-    cursor.execute('SELECT * FROM transferencias')
+    cursor.execute('SELECT * FROM transferencias ORDER BY fecha DESC')
     datos = cursor.fetchall()
     conn.close()
     return render_template('lista.html', datos=datos)
-
-# Servir imágenes guardadas (si aún hay almacenadas localmente)
-@app.route('/uploads/<filename>')
-def uploaded_file(filename):
-    if not session.get('logueado'):
-        return redirect(url_for('login'))
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

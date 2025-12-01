@@ -2,7 +2,3 @@ flask
 gunicorn
 python-dotenv
 cloudinary
-psycopg2-binary
-SQLAlchemy
-
-

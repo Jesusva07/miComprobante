@@ -1,6 +1,6 @@
 from flask import Flask, request, redirect, url_for, render_template, session, flash
+from flask_sqlalchemy import SQLAlchemy
 import os
-import sqlite3
 from datetime import datetime
 from dotenv import load_dotenv
 import cloudinary
@@ -11,6 +11,21 @@ load_dotenv()
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
+
+# Configurar SQLAlchemy con PostgreSQL
+database_url = os.getenv('DATABASE_URL')
+if database_url:
+    # Para compatibilidad con Vercel
+    if database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+else:
+    # Fallback para desarrollo local
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db = SQLAlchemy(app)
 
 # Usar variables de entorno
 app.secret_key = os.getenv('SECRET_KEY', 'default-secret-key-change-in-production')
@@ -28,24 +43,22 @@ cloudinary.config(
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
 
-# Inicializar base de datos SQLite
-def init_db():
-    conn = sqlite3.connect('database.db')
-    cursor = conn.cursor()
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS transferencias (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        nombre TEXT NOT NULL,
-        fecha TEXT NOT NULL,
-        monto TEXT,
-        descripcion TEXT,
-        imagen TEXT NOT NULL
-    )
-    ''')
-    conn.commit()
-    conn.close()
+# Modelo de Base de Datos
+class Transferencia(db.Model):
+    __tablename__ = 'transferencias'
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(255), nullable=False)
+    fecha = db.Column(db.String(255), nullable=False)
+    monto = db.Column(db.String(255))
+    descripcion = db.Column(db.Text)
+    imagen = db.Column(db.String(512), nullable=False)
 
-init_db()
+    def __repr__(self):
+        return f'<Transferencia {self.nombre}>'
+
+# Crear las tablas
+with app.app_context():
+    db.create_all()
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -57,7 +70,6 @@ def login():
             return redirect(url_for('index'))
         else:
             flash('Usuario o contraseña incorrectos')
-            return render_template('login.html')
     return render_template('login.html')
 
 @app.route('/logout')
@@ -77,13 +89,13 @@ def index():
         monto = request.form.get('monto', '')
         descripcion = request.form.get('descripcion', '')
         imagen = request.files['imagen']
-
+        
         if imagen:
             try:
                 # Subir a Cloudinary
                 resultado = cloudinary.uploader.upload(
                     imagen,
-                    folder='comprobantes',  # Carpeta en Cloudinary
+                    folder='comprobantes',
                     resource_type='auto'
                 )
                 
@@ -91,20 +103,24 @@ def index():
                 url_imagen = resultado['secure_url']
                 
                 # Guardar en la base de datos
-                conn = sqlite3.connect('database.db')
-                cursor = conn.cursor()
-                cursor.execute('INSERT INTO transferencias (nombre, fecha, monto, descripcion, imagen) VALUES (?, ?, ?, ?, ?)', 
-                              (nombre, fecha, monto, descripcion, url_imagen))
-                conn.commit()
-                conn.close()
+                nueva_transferencia = Transferencia(
+                    nombre=nombre,
+                    fecha=fecha,
+                    monto=monto,
+                    descripcion=descripcion,
+                    imagen=url_imagen
+                )
+                db.session.add(nueva_transferencia)
+                db.session.commit()
                 
                 flash('Comprobante subido exitosamente')
                 return redirect(url_for('index'))
                 
             except Exception as e:
+                db.session.rollback()
                 flash(f'Error al subir la imagen: {str(e)}')
                 return redirect(url_for('index'))
-
+    
     return render_template('index.html')
 
 # Página de listado/consulta
@@ -112,13 +128,13 @@ def index():
 def ver_transferencias():
     if not session.get('logueado'):
         return redirect(url_for('login'))
-    conn = sqlite3.connect('database.db')
-    cursor = conn.cursor()
-    cursor.execute('SELECT * FROM transferencias ORDER BY fecha DESC')
-    datos = cursor.fetchall()
-    conn.close()
+    
+    transferencias = Transferencia.query.order_by(Transferencia.fecha.desc()).all()
+    
+    # Convertir a tuplas para compatibilidad con la plantilla
+    datos = [(t.id, t.nombre, t.fecha, t.monto, t.descripcion, t.imagen) for t in transferencias]
+    
     return render_template('lista.html', datos=datos)
-
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

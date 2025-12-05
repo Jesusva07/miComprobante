@@ -118,6 +118,41 @@ def ver_transferencias():
     conn.close()
     return render_template('lista.html', datos=datos)
 
+
+@app.route('/transferencias/eliminar/<int:transfer_id>', methods=['POST'])
+def eliminar_transferencia(transfer_id):
+    """Eliminar una transferencia por ID"""
+    if not session.get('logueado'):
+        return redirect(url_for('login'))
+    
+    try:
+        conn = sqlite3.connect('database.db')
+        cursor = conn.cursor()
+        
+        # Obtener la URL de la imagen para eliminarla de Cloudinary (opcional)
+        cursor.execute('SELECT imagen FROM transferencias WHERE id = ?', (transfer_id,))
+        resultado = cursor.fetchone()
+        
+        if resultado:
+            imagen_url = resultado[0]
+            # Aquí podrías eliminar de Cloudinary si quieres (es opcional)
+            
+            # Eliminar registro de la base de datos
+            cursor.execute('DELETE FROM transferencias WHERE id = ?', (transfer_id,))
+            conn.commit()
+            conn.close()
+            
+            flash('Transferencia eliminada correctamente')
+            return redirect(url_for('ver_transferencias'))
+        else:
+            flash('Transferencia no encontrada')
+            return redirect(url_for('ver_transferencias'))
+            
+    except Exception as e:
+        flash(f'Error al eliminar: {str(e)}')
+        return redirect(url_for('ver_transferencias'))
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=False)

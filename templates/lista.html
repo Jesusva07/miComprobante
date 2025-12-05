@@ -5,6 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Transferencias guardadas</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='estilos.css') }}">
+    <style>
+        /* Estilos adicionales para el botón de eliminar */
+        .btn-eliminar {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 20px;
+            color: #ff4444;
+            transition: all 0.3s ease;
+            padding: 5px 10px;
+        }
+
+        .btn-eliminar:hover {
+            color: #cc0000;
+            transform: scale(1.2);
+        }
+
+        .btn-eliminar:active {
+            transform: scale(0.95);
+        }
+
+        td.acciones {
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
 <div class="header">
@@ -28,6 +53,7 @@
                 <th>Monto</th>
                 <th>Descripción</th>
                 <th>Comprobante</th>
+                <th>Acciones</th>
             </tr>
         </thead>
         <tbody>
@@ -38,10 +64,16 @@
                 <td>{{ tr[3] }}</td>
                 <td>{{ tr[4] }}</td>
                 <td>
-                    <!-- La URL ya está en tr[5] desde Cloudinary, no necesita conversión -->
                     <a href="{{ tr[5] }}" target="_blank" rel="noopener noreferrer">
                         <img src="{{ tr[5] }}" width="100" alt="Comprobante" loading="lazy"/>
                     </a>
+                </td>
+                <td class="acciones">
+                    <form method="POST" action="{{ url_for('eliminar_transferencia', transfer_id=tr[0]) }}" style="display:inline;">
+                        <button type="submit" class="btn-eliminar" title="Eliminar transferencia" onclick="return confirm('¿Está seguro de que desea eliminar este registro?');">
+                            🗑️
+                        </button>
+                    </form>
                 </td>
             </tr>
         {% endfor %}

@@ -6,7 +6,114 @@
     <title>Transferencias guardadas</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='estilos.css') }}">
     <style>
-        /* Estilos adicionales para el botón de eliminar */
+        /* Estilos para la barra de filtros */
+        .filtros-container {
+            background: #f0f5fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 2px solid #d0e0f0;
+        }
+
+        .filtros-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .filtro-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .filtro-group label {
+            font-weight: 600;
+            color: #2d5a7b;
+            font-size: 13px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .filtro-group input,
+        .filtro-group select {
+            padding: 10px 12px;
+            border: 2px solid #d0e0f0;
+            border-radius: 6px;
+            font-size: 14px;
+            background-color: #ffffff;
+            color: #1a1a1a;
+            transition: all 0.3s ease;
+        }
+
+        .filtro-group input:focus,
+        .filtro-group select:focus {
+            outline: none;
+            border-color: #4a90c7;
+            box-shadow: 0 0 0 3px rgba(74, 144, 199, 0.1);
+        }
+
+        .filtro-group select {
+            cursor: pointer;
+        }
+
+        .botones-filtro {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-filtro {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #1a3a52 0%, #2d5a7b 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .btn-filtro:hover {
+            box-shadow: 0 4px 12px rgba(26, 58, 82, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .btn-limpiar {
+            padding: 10px 20px;
+            background: #999999;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            min-width: 120px;
+        }
+
+        .btn-limpiar:hover {
+            background: #777777;
+            transform: translateY(-2px);
+        }
+
+        .resultado-filtro {
+            background: #e8f0f8;
+            padding: 10px 15px;
+            border-radius: 6px;
+            color: #2d5a7b;
+            font-weight: 500;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .resultado-filtro.activo {
+            display: block;
+        }
+
+        /* Estilos para la tabla */
         .btn-eliminar {
             background: none;
             border: none;
@@ -22,12 +129,31 @@
             transform: scale(1.2);
         }
 
-        .btn-eliminar:active {
-            transform: scale(0.95);
-        }
-
         td.acciones {
             text-align: center;
+        }
+
+        .sin-resultados {
+            text-align: center;
+            padding: 40px;
+            color: #4a90c7;
+            background: #f0f5fa;
+            border-radius: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .filtros-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .botones-filtro {
+                flex-direction: column;
+            }
+
+            .btn-filtro,
+            .btn-limpiar {
+                width: 100%;
+            }
         }
     </style>
 </head>
@@ -44,6 +170,67 @@
     <h2>Lista de transferencias guardadas</h2>
     <a href="{{ url_for('index') }}" class="btn-secondary">Volver al formulario</a>
     
+    <!-- BARRA DE FILTROS -->
+    <div class="filtros-container">
+        <h3 style="color: #1a3a52; margin-bottom: 15px; font-size: 16px;">🔍 Filtrar Transferencias</h3>
+        
+        <form method="GET" action="{{ url_for('ver_transferencias') }}">
+            <div class="filtros-grid">
+                <!-- Campo de búsqueda -->
+                <div class="filtro-group">
+                    <label for="busqueda">Buscar por:</label>
+                    <input type="text" id="busqueda" name="busqueda" 
+                           placeholder="Ingresa término de búsqueda..." 
+                           value="{{ busqueda }}">
+                </div>
+
+                <!-- Tipo de búsqueda -->
+                <div class="filtro-group">
+                    <label for="tipo">Tipo de Búsqueda:</label>
+                    <select id="tipo" name="tipo">
+                        <option value="nombre" {% if filtro_tipo == 'nombre' %}selected{% endif %}>Por Nombre</option>
+                        <option value="monto" {% if filtro_tipo == 'monto' %}selected{% endif %}>Por Monto</option>
+                        <option value="descripcion" {% if filtro_tipo == 'descripcion' %}selected{% endif %}>Por Descripción</option>
+                    </select>
+                </div>
+
+                <!-- Filtro de fecha -->
+                <div class="filtro-group">
+                    <label for="fecha">Filtrar por Fecha:</label>
+                    <input type="date" id="fecha" name="fecha" 
+                           value="{{ filtro_fecha }}">
+                </div>
+            </div>
+
+            <!-- Botones de acción -->
+            <div class="botones-filtro">
+                <button type="submit" class="btn-filtro">🔎 Buscar</button>
+                <a href="{{ url_for('ver_transferencias') }}" class="btn-limpiar" style="text-decoration: none; display: flex; align-items: center; justify-content: center;">
+                    ✕ Limpiar Filtros
+                </a>
+            </div>
+        </form>
+
+        <!-- Mensaje de resultado -->
+        {% if busqueda or filtro_fecha %}
+        <div class="resultado-filtro activo">
+            {% if busqueda %}
+                📌 Buscando: "{{ busqueda }}" (en {{ filtro_tipo }})
+            {% endif %}
+            {% if filtro_fecha %}
+                {% if busqueda %}<br>{% endif %}
+                📅 Fecha: {{ filtro_fecha }}
+            {% endif %}
+            {% if datos|length == 0 %}
+                - <strong>No se encontraron resultados</strong>
+            {% else %}
+                - <strong>{{ datos|length }} resultado(s) encontrado(s)</strong>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- TABLA DE RESULTADOS -->
     {% if datos %}
     <table>
         <thead>
@@ -61,8 +248,8 @@
             <tr>
                 <td>{{ tr[1] }}</td>
                 <td>{{ tr[2] }}</td>
-                <td>{{ tr[3] }}</td>
-                <td>{{ tr[4] }}</td>
+                <td>{{ tr[3] if tr[3] else '-' }}</td>
+                <td>{{ tr[4] if tr[4] else '-' }}</td>
                 <td>
                     <a href="{{ tr[5] }}" target="_blank" rel="noopener noreferrer">
                         <img src="{{ tr[5] }}" width="100" alt="Comprobante" loading="lazy"/>
@@ -70,7 +257,8 @@
                 </td>
                 <td class="acciones">
                     <form method="POST" action="{{ url_for('eliminar_transferencia', transfer_id=tr[0]) }}" style="display:inline;">
-                        <button type="submit" class="btn-eliminar" title="Eliminar transferencia" onclick="return confirm('¿Está seguro de que desea eliminar este registro?');">
+                        <button type="submit" class="btn-eliminar" title="Eliminar transferencia" 
+                                onclick="return confirm('¿Está seguro de que desea eliminar este registro?');">
                             🗑️
                         </button>
                     </form>
@@ -80,9 +268,15 @@
         </tbody>
     </table>
     {% else %}
-    <div style="text-align: center; padding: 40px; color: #4a90c7;">
-        <p>No hay transferencias registradas aún.</p>
+    <div class="sin-resultados">
+        <h3>No hay transferencias registradas</h3>
+        {% if busqueda or filtro_fecha %}
+        <p>No se encontraron resultados para los filtros aplicados.</p>
+        <a href="{{ url_for('ver_transferencias') }}" class="btn-secondary">Limpiar filtros</a>
+        {% else %}
+        <p>Comienza subiendo tu primer comprobante.</p>
         <a href="{{ url_for('index') }}" class="btn-secondary">Subir primera transferencia</a>
+        {% endif %}
     </div>
     {% endif %}
 </div>

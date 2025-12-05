@@ -111,12 +111,54 @@ def index():
 def ver_transferencias():
     if not session.get('logueado'):
         return redirect(url_for('login'))
-    conn = sqlite3.connect('database.db')
-    cursor = conn.cursor()
-    cursor.execute('SELECT * FROM transferencias ORDER BY fecha DESC')
-    datos = cursor.fetchall()
-    conn.close()
-    return render_template('lista.html', datos=datos)
+    
+    # Obtener parámetros de búsqueda
+    busqueda = request.args.get('busqueda', '').strip()
+    filtro_fecha = request.args.get('fecha', '').strip()
+    filtro_tipo = request.args.get('tipo', 'nombre').strip()  # nombre, fecha, monto
+    
+    try:
+        conn = sqlite3.connect('database.db')
+        cursor = conn.cursor()
+        
+        # Query base
+        query = 'SELECT * FROM transferencias WHERE 1=1'
+        params = []
+        
+        # Filtro de búsqueda
+        if busqueda:
+            if filtro_tipo == 'nombre':
+                query += ' AND nombre LIKE ?'
+                params.append(f'%{busqueda}%')
+            elif filtro_tipo == 'monto':
+                query += ' AND monto LIKE ?'
+                params.append(f'%{busqueda}%')
+            elif filtro_tipo == 'descripcion':
+                query += ' AND descripcion LIKE ?'
+                params.append(f'%{busqueda}%')
+        
+        # Filtro de fecha exacta
+        if filtro_fecha:
+            query += ' AND fecha = ?'
+            params.append(filtro_fecha)
+        
+        # Ordenar por fecha descendente
+        query += ' ORDER BY fecha DESC'
+        
+        cursor.execute(query, params)
+        datos = cursor.fetchall()
+        conn.close()
+        
+        return render_template('lista.html', 
+                             datos=datos,
+                             busqueda=busqueda,
+                             filtro_fecha=filtro_fecha,
+                             filtro_tipo=filtro_tipo)
+    except Exception as e:
+        print(f"Error en búsqueda: {e}")
+        flash(f'Error al filtrar: {str(e)}')
+        return render_template('lista.html', datos=[])
+
 
 
 @app.route('/transferencias/eliminar/<int:transfer_id>', methods=['POST'])

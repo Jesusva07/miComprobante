@@ -26,4 +26,4 @@ ENV/
 Thumbs.db
 
 # Base de datos local (opcional, si no quieres versionarla)
-# database.db
+database.db

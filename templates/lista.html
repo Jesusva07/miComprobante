@@ -5,157 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Transferencias guardadas</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='estilos.css') }}">
-    <style>
-        /* Estilos para la barra de filtros */
-        .filtros-container {
-            background: #f0f5fa;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            border: 2px solid #d0e0f0;
-        }
-
-        .filtros-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-
-        .filtro-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .filtro-group label {
-            font-weight: 600;
-            color: #2d5a7b;
-            font-size: 13px;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .filtro-group input,
-        .filtro-group select {
-            padding: 10px 12px;
-            border: 2px solid #d0e0f0;
-            border-radius: 6px;
-            font-size: 14px;
-            background-color: #ffffff;
-            color: #1a1a1a;
-            transition: all 0.3s ease;
-        }
-
-        .filtro-group input:focus,
-        .filtro-group select:focus {
-            outline: none;
-            border-color: #4a90c7;
-            box-shadow: 0 0 0 3px rgba(74, 144, 199, 0.1);
-        }
-
-        .filtro-group select {
-            cursor: pointer;
-        }
-
-        .botones-filtro {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .btn-filtro {
-            padding: 10px 20px;
-            background: linear-gradient(135deg, #1a3a52 0%, #2d5a7b 100%);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            flex: 1;
-            min-width: 120px;
-        }
-
-        .btn-filtro:hover {
-            box-shadow: 0 4px 12px rgba(26, 58, 82, 0.3);
-            transform: translateY(-2px);
-        }
-
-        .btn-limpiar {
-            padding: 10px 20px;
-            background: #999999;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            min-width: 120px;
-        }
-
-        .btn-limpiar:hover {
-            background: #777777;
-            transform: translateY(-2px);
-        }
-
-        .resultado-filtro {
-            background: #e8f0f8;
-            padding: 10px 15px;
-            border-radius: 6px;
-            color: #2d5a7b;
-            font-weight: 500;
-            margin-top: 10px;
-            display: none;
-        }
-
-        .resultado-filtro.activo {
-            display: block;
-        }
-
-        /* Estilos para la tabla */
-        .btn-eliminar {
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 20px;
-            color: #ff4444;
-            transition: all 0.3s ease;
-            padding: 5px 10px;
-        }
-
-        .btn-eliminar:hover {
-            color: #cc0000;
-            transform: scale(1.2);
-        }
-
-        td.acciones {
-            text-align: center;
-        }
-
-        .sin-resultados {
-            text-align: center;
-            padding: 40px;
-            color: #4a90c7;
-            background: #f0f5fa;
-            border-radius: 10px;
-        }
-
-        @media (max-width: 768px) {
-            .filtros-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .botones-filtro {
-                flex-direction: column;
-            }
-
-            .btn-filtro,
-            .btn-limpiar {
-                width: 100%;
-            }
-        }
-    </style>
 </head>
 <body>
 <div class="header">
@@ -172,9 +21,9 @@
     
     <!-- BARRA DE FILTROS -->
     <div class="filtros-container">
-        <h3 style="color: #1a3a52; margin-bottom: 15px; font-size: 16px;">🔍 Filtrar Transferencias</h3>
+        <h3 class="filtros-titulo">🔍 Filtrar Transferencias</h3>
         
-        <form method="GET" action="{{ url_for('ver_transferencias') }}">
+        <form method="GET" action="{{ url_for('ver_transferencias') }}" class="filtros-form">
             <div class="filtros-grid">
                 <!-- Campo de búsqueda -->
                 <div class="filtro-group">
@@ -205,9 +54,7 @@
             <!-- Botones de acción -->
             <div class="botones-filtro">
                 <button type="submit" class="btn-filtro">🔎 Buscar</button>
-                <a href="{{ url_for('ver_transferencias') }}" class="btn-limpiar" style="text-decoration: none; display: flex; align-items: center; justify-content: center;">
-                    ✕ Limpiar Filtros
-                </a>
+                <a href="{{ url_for('ver_transferencias') }}" class="btn-limpiar">✕ Limpiar Filtros</a>
             </div>
         </form>
 
@@ -256,7 +103,7 @@
                     </a>
                 </td>
                 <td class="acciones">
-                    <form method="POST" action="{{ url_for('eliminar_transferencia', transfer_id=tr[0]) }}" style="display:inline;">
+                    <form method="POST" action="{{ url_for('eliminar_transferencia', transfer_id=tr[0]) }}" class="form-eliminar">
                         <button type="submit" class="btn-eliminar" title="Eliminar transferencia" 
                                 onclick="return confirm('¿Está seguro de que desea eliminar este registro?');">
                             🗑️

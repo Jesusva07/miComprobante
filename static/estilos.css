@@ -325,3 +325,218 @@ td img:hover {
         td.acciones {
             text-align: center;
         }
+/* ========================================
+   ESTILOS PARA FILTROS Y BÚSQUEDA
+   ======================================== */
+
+.filtros-container {
+    background: #f0f5fa;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    border: 2px solid #d0e0f0;
+}
+
+.filtros-titulo {
+    color: #1a3a52;
+    margin-bottom: 15px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.filtros-form {
+    display: flex;
+    flex-direction: column;
+}
+
+.filtros-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.filtro-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.filtro-group label {
+    font-weight: 600;
+    color: #2d5a7b;
+    font-size: 13px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.filtro-group input,
+.filtro-group select {
+    padding: 10px 12px;
+    border: 2px solid #d0e0f0;
+    border-radius: 6px;
+    font-size: 14px;
+    background-color: #ffffff;
+    color: #1a1a1a;
+    transition: all 0.3s ease;
+    font-family: inherit;
+}
+
+.filtro-group input:focus,
+.filtro-group select:focus {
+    outline: none;
+    border-color: #4a90c7;
+    box-shadow: 0 0 0 3px rgba(74, 144, 199, 0.1);
+}
+
+.filtro-group select {
+    cursor: pointer;
+}
+
+.botones-filtro {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.btn-filtro {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #1a3a52 0%, #2d5a7b 100%);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    flex: 1;
+    min-width: 120px;
+}
+
+.btn-filtro:hover {
+    box-shadow: 0 4px 12px rgba(26, 58, 82, 0.3);
+    transform: translateY(-2px);
+}
+
+.btn-filtro:active {
+    transform: translateY(0);
+}
+
+.btn-limpiar {
+    padding: 10px 20px;
+    background: #999999;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    min-width: 120px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-limpiar:hover {
+    background: #777777;
+    transform: translateY(-2px);
+}
+
+.resultado-filtro {
+    background: #e8f0f8;
+    padding: 10px 15px;
+    border-radius: 6px;
+    color: #2d5a7b;
+    font-weight: 500;
+    margin-top: 10px;
+    display: none;
+    border-left: 4px solid #4a90c7;
+}
+
+.resultado-filtro.activo {
+    display: block;
+}
+
+/* ========================================
+   ESTILOS PARA ACCIONES EN TABLA
+   ======================================== */
+
+.form-eliminar {
+    display: inline;
+}
+
+.btn-eliminar {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 20px;
+    color: #ff4444;
+    transition: all 0.3s ease;
+    padding: 5px 10px;
+}
+
+.btn-eliminar:hover {
+    color: #cc0000;
+    transform: scale(1.2);
+}
+
+.btn-eliminar:active {
+    transform: scale(0.95);
+}
+
+.acciones {
+    text-align: center;
+}
+
+/* ========================================
+   ESTILOS PARA SIN RESULTADOS
+   ======================================== */
+
+.sin-resultados {
+    text-align: center;
+    padding: 40px;
+    color: #4a90c7;
+    background: #f0f5fa;
+    border-radius: 10px;
+}
+
+.sin-resultados h3 {
+    color: #1a3a52;
+    margin-bottom: 10px;
+}
+
+.sin-resultados p {
+    margin-bottom: 15px;
+    color: #2d5a7b;
+}
+
+/* ========================================
+   RESPONSIVE PARA MÓVILES
+   ======================================== */
+
+@media (max-width: 768px) {
+    .filtros-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .botones-filtro {
+        flex-direction: column;
+    }
+
+    .btn-filtro,
+    .btn-limpiar {
+        width: 100%;
+    }
+
+    .filtros-container {
+        padding: 15px;
+    }
+
+    table {
+        font-size: 13px;
+    }
+
+    th, td {
+        padding: 8px;
+    }
+}

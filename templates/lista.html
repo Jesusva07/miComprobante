@@ -25,15 +25,11 @@
         
         <form method="GET" action="{{ url_for('ver_transferencias') }}" class="filtros-form">
             <div class="filtros-grid">
-                <!-- Campo de búsqueda -->
                 <div class="filtro-group">
                     <label for="busqueda">Buscar por:</label>
-                    <input type="text" id="busqueda" name="busqueda" 
-                           placeholder="Ingresa término de búsqueda..." 
-                           value="{{ busqueda }}">
+                    <input type="text" id="busqueda" name="busqueda" placeholder="Ingresa término de búsqueda..." value="{{ busqueda }}">
                 </div>
 
-                <!-- Tipo de búsqueda -->
                 <div class="filtro-group">
                     <label for="tipo">Tipo de Búsqueda:</label>
                     <select id="tipo" name="tipo">
@@ -43,22 +39,18 @@
                     </select>
                 </div>
 
-                <!-- Filtro de fecha -->
                 <div class="filtro-group">
                     <label for="fecha">Filtrar por Fecha:</label>
-                    <input type="date" id="fecha" name="fecha" 
-                           value="{{ filtro_fecha }}">
+                    <input type="date" id="fecha" name="fecha" value="{{ filtro_fecha }}">
                 </div>
             </div>
 
-            <!-- Botones de acción -->
             <div class="botones-filtro">
                 <button type="submit" class="btn-filtro">🔎 Buscar</button>
                 <a href="{{ url_for('ver_transferencias') }}" class="btn-limpiar">✕ Limpiar Filtros</a>
             </div>
         </form>
 
-        <!-- Mensaje de resultado -->
         {% if busqueda or filtro_fecha %}
         <div class="resultado-filtro activo">
             {% if busqueda %}
@@ -99,15 +91,12 @@
                 <td>{{ tr[4] if tr[4] else '-' }}</td>
                 <td>
                     <a href="{{ tr[5] }}" target="_blank" rel="noopener noreferrer">
-                        <img src="{{ tr[5] }}" width="100" alt="Comprobante" loading="lazy"/>
+                        <img src="{{ tr[5] }}" width="100" alt="Comprobante" loading="lazy">
                     </a>
                 </td>
                 <td class="acciones">
                     <form method="POST" action="{{ url_for('eliminar_transferencia', transfer_id=tr[0]) }}" class="form-eliminar">
-                        <button type="submit" class="btn-eliminar" title="Eliminar transferencia" 
-                                onclick="return confirm('¿Está seguro de que desea eliminar este registro?');">
-                            🗑️
-                        </button>
+                        <button type="submit" class="btn-eliminar" title="Eliminar transferencia" onclick="return confirm('¿Está seguro de que desea eliminar este registro?');">🗑️</button>
                     </form>
                 </td>
             </tr>

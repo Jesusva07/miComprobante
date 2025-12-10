@@ -209,7 +209,6 @@ tbody tr:last-child td {
     border-bottom: none;
 }
 
-/* Imágenes en tabla */
 td img {
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(26, 58, 82, 0.1);
@@ -279,79 +278,34 @@ td img:hover {
 
 .btn-secondary:hover {
     background: #2d5a7b;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(74, 144, 199, 0.3);
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-    .contenedor {
-        padding: 20px;
-    }
-    
-    .header {
-        flex-direction: column;
-        gap: 15px;
-        text-align: center;
-    }
-    
-    table {
-        font-size: 14px;
-    }
-    
-    th, td {
-        padding: 10px;
-    }
-}
-.btn-eliminar {
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 20px;
-            color: #ff4444;
-            transition: all 0.3s ease;
-            padding: 5px 10px;
-        }
-
-.btn-eliminar:hover {
-            color: #cc0000;
-            transform: scale(1.2);
-        }
-
-.btn-eliminar:active {
-            transform: scale(0.95);
-        }
-
-        td.acciones {
-            text-align: center;
-        }
-/* ========================================
-   ESTILOS PARA FILTROS Y BÚSQUEDA
-   ======================================== */
-
+/* Zona de filtros y búsqueda */
 .filtros-container {
-    background: #f0f5fa;
-    padding: 20px;
-    border-radius: 10px;
-    margin-bottom: 20px;
-    border: 2px solid #d0e0f0;
+    background: linear-gradient(135deg, #f8fbff 0%, #f0f5fa 100%);
+    padding: 25px;
+    border-radius: 12px;
+    margin: 20px 0;
+    border-left: 4px solid #4a90c7;
+    box-shadow: 0 2px 10px rgba(26, 58, 82, 0.08);
 }
 
 .filtros-titulo {
     color: #1a3a52;
+    font-size: 18px;
     margin-bottom: 15px;
-    font-size: 16px;
-    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .filtros-form {
-    display: flex;
-    flex-direction: column;
+    gap: 15px;
 }
 
 .filtros-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 15px;
     margin-bottom: 15px;
 }
@@ -359,27 +313,26 @@ td img:hover {
 .filtro-group {
     display: flex;
     flex-direction: column;
+    gap: 6px;
 }
 
 .filtro-group label {
-    font-weight: 600;
     color: #2d5a7b;
+    font-weight: 600;
     font-size: 13px;
-    margin-bottom: 8px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    margin-bottom: 0;
 }
 
 .filtro-group input,
 .filtro-group select {
+    width: 100%;
     padding: 10px 12px;
     border: 2px solid #d0e0f0;
     border-radius: 6px;
     font-size: 14px;
-    background-color: #ffffff;
-    color: #1a1a1a;
     transition: all 0.3s ease;
-    font-family: inherit;
+    background-color: white;
+    color: #1a1a1a;
 }
 
 .filtro-group input:focus,
@@ -389,8 +342,13 @@ td img:hover {
     box-shadow: 0 0 0 3px rgba(74, 144, 199, 0.1);
 }
 
-.filtro-group select {
+select {
     cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%232d5a7b' d='M10.293 3.293L6 7.586 1.707 3.293A1 1 0 00.293 4.707l5 5a1 1 0 001.414 0l5-5a1 1 0 10-1.414-1.414z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 30px;
 }
 
 .botones-filtro {
@@ -400,143 +358,113 @@ td img:hover {
 }
 
 .btn-filtro {
-    padding: 10px 20px;
     background: linear-gradient(135deg, #1a3a52 0%, #2d5a7b 100%);
     color: white;
+    padding: 12px 24px;
     border: none;
     border-radius: 6px;
-    cursor: pointer;
+    font-size: 14px;
     font-weight: 600;
+    cursor: pointer;
     transition: all 0.3s ease;
-    flex: 1;
-    min-width: 120px;
+    box-shadow: 0 2px 8px rgba(26, 58, 82, 0.2);
 }
 
 .btn-filtro:hover {
-    box-shadow: 0 4px 12px rgba(26, 58, 82, 0.3);
     transform: translateY(-2px);
-}
-
-.btn-filtro:active {
-    transform: translateY(0);
+    box-shadow: 0 4px 12px rgba(26, 58, 82, 0.3);
+    background: linear-gradient(135deg, #2d5a7b 0%, #3d7a9b 100%);
 }
 
 .btn-limpiar {
-    padding: 10px 20px;
-    background: #999999;
-    color: white;
-    border: none;
+    background: #e8f0f8;
+    color: #2d5a7b;
+    padding: 12px 24px;
+    border: 2px solid #d0e0f0;
     border-radius: 6px;
-    cursor: pointer;
+    font-size: 14px;
     font-weight: 600;
-    transition: all 0.3s ease;
-    min-width: 120px;
+    cursor: pointer;
     text-decoration: none;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
+    transition: all 0.3s ease;
 }
 
 .btn-limpiar:hover {
-    background: #777777;
+    background: #d0e0f0;
+    border-color: #4a90c7;
+    color: #1a3a52;
     transform: translateY(-2px);
 }
 
 .resultado-filtro {
-    background: #e8f0f8;
-    padding: 10px 15px;
+    background: white;
+    border: 2px solid #d0e0f0;
     border-radius: 6px;
+    padding: 12px 15px;
+    margin-top: 12px;
     color: #2d5a7b;
-    font-weight: 500;
-    margin-top: 10px;
-    display: none;
-    border-left: 4px solid #4a90c7;
+    font-size: 14px;
+    line-height: 1.6;
 }
 
 .resultado-filtro.activo {
-    display: block;
+    background: linear-gradient(135deg, #f0fbff 0%, #e8f5ff 100%);
+    border-color: #4a90c7;
+    box-shadow: 0 2px 8px rgba(74, 144, 199, 0.1);
 }
 
-/* ========================================
-   ESTILOS PARA ACCIONES EN TABLA
-   ======================================== */
-
-.form-eliminar {
-    display: inline;
-}
-
-.btn-eliminar {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 20px;
-    color: #ff4444;
-    transition: all 0.3s ease;
-    padding: 5px 10px;
-}
-
-.btn-eliminar:hover {
-    color: #cc0000;
-    transform: scale(1.2);
-}
-
-.btn-eliminar:active {
-    transform: scale(0.95);
-}
-
-.acciones {
-    text-align: center;
-}
-
-/* ========================================
-   ESTILOS PARA SIN RESULTADOS
-   ======================================== */
-
+/* Sin resultados */
 .sin-resultados {
     text-align: center;
-    padding: 40px;
-    color: #4a90c7;
-    background: #f0f5fa;
-    border-radius: 10px;
+    padding: 40px 20px;
+    color: #2d5a7b;
 }
 
 .sin-resultados h3 {
     color: #1a3a52;
+    font-size: 22px;
     margin-bottom: 10px;
 }
 
 .sin-resultados p {
-    margin-bottom: 15px;
-    color: #2d5a7b;
+    color: #4a7a9d;
+    font-size: 15px;
+    margin-bottom: 20px;
 }
 
-/* ========================================
-   RESPONSIVE PARA MÓVILES
-   ======================================== */
+/* Estilos para acciones en tabla */
+.acciones {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
 
-@media (max-width: 768px) {
-    .filtros-grid {
-        grid-template-columns: 1fr;
-    }
+.form-eliminar {
+    display: inline;
+    margin: 0;
+}
 
-    .botones-filtro {
-        flex-direction: column;
-    }
+.btn-eliminar {
+    background: #f5e8e8;
+    color: #c33333;
+    border: 2px solid #e8b4b4;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+}
 
-    .btn-filtro,
-    .btn-limpiar {
-        width: 100%;
-    }
-
-    .filtros-container {
-        padding: 15px;
-    }
-
-    table {
-        font-size: 13px;
-    }
-
-    th, td {
-        padding: 8px;
-    }
+.btn-eliminar:hover {
+    background: #e8b4b4;
+    color: white;
+    transform: scale(1.1);
 }
